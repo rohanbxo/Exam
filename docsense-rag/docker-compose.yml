@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  docsense-rag:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - HOST=0.0.0.0
+      - PORT=8000
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
