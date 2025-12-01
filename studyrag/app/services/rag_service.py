@@ -1,6 +1,6 @@
 from llama_index.core import VectorStoreIndex, Document, Settings
 from llama_index.llms.groq import Groq
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.embeddings.fastembed import FastEmbedEmbedding
 from llama_index.core.chat_engine import CondensePlusContextChatEngine
 from typing import Optional, AsyncGenerator, List
 from app.config import settings
@@ -20,8 +20,8 @@ class RAGService:
     def _initialize_llm(self):
         if not self._llm_initialized:
             Settings.llm = Groq(model="llama-3.1-8b-instant", api_key=settings.groq_api_key)
-            # Use local HuggingFace embeddings (free, no API needed)
-            Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+            # Use FastEmbed - lightweight embeddings optimized for low memory
+            Settings.embed_model = FastEmbedEmbedding(model_name="BAAI/bge-small-en-v1.5")
             self._llm_initialized = True
 
     def create_index_from_text(self, text: str, source_name: str) -> None:
