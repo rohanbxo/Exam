@@ -15,7 +15,7 @@ from app.services.rag_service import RAGService
 from app.utils.document_processor import DocumentProcessor
 
 app = FastAPI(
-    title="DocSense RAG API",
+    title="Studyson RAG API",
     description="Document QA and Summarization using RAG",
     version="1.0.0"
 )
@@ -198,7 +198,7 @@ async def reset_index():
 async def get_status():
     return StatusResponse(
         status="online",
-        message="DocSense RAG API is running",
+        message="Studyson RAG API is running",
         details={
             "has_documents": rag_service.has_documents(),
             "indexed_documents": rag_service.get_indexed_documents(),

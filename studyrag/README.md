@@ -1,6 +1,6 @@
-# DocSense - RAG Document QA & Summarization API
+# Studyson - RAG Document QA & Summarization API
 
-A full-stack Retrieval-Augmented Generation (RAG) system for intelligent document question-answering and summarization. Built with FastAPI, LlamaIndex, and Google Gemini AI.
+A full-stack Retrieval-Augmented Generation (RAG) system for intelligent document question-answering and summarization. Built with FastAPI, LlamaIndex, and Groq AI.
 
 ## Features
 
