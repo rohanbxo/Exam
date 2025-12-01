@@ -1,14 +1,14 @@
 version: '3.8'
 
 services:
-  studyrag:
+  studyson:
     build: .
     ports:
-      - "8000:8000"
+      - "7860:7860"
     environment:
       - GROQ_API_KEY=${GROQ_API_KEY}
       - HOST=0.0.0.0
-      - PORT=8000
+      - PORT=7860
     volumes:
       - ./uploads:/app/uploads
     restart: unless-stopped

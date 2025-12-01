@@ -75,18 +75,18 @@ cp .env.example .env
 Edit `.env` and add your Groq API key:
 ```
 GROQ_API_KEY=your_groq_api_key_here
-PORT=8000
+PORT=7860
 HOST=0.0.0.0
 ```
 
 5. **Run the application**
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 7860
 ```
 
 6. **Access the application**
 
-Open your browser and navigate to: `http://localhost:8000`
+Open your browser and navigate to: `http://localhost:7860`
 
 ### Docker Setup
 
@@ -147,7 +147,7 @@ studyrag/
 
 - `GROQ_API_KEY`: Your Groq API key (required, free tier available)
 - `HOST`: Server host (default: 0.0.0.0)
-- `PORT`: Server port (default: 8000)
+- `PORT`: Server port (default: 7860)
 
 ### Application Settings
 
@@ -157,18 +157,20 @@ Edit `app/config.py` to modify:
 
 ## Deployment
 
-### Deploy to Render (Free)
+### Deploy to Hugging Face Spaces (Recommended - Free)
 
 1. Push code to GitHub
-2. Go to [render.com](https://render.com)
-3. Create new Web Service
-4. Connect your GitHub repo
-5. Configure:
-   - **Root Directory**: `studyrag`
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-6. Add environment variable: `GROQ_API_KEY`
-7. Deploy!
+2. Go to [huggingface.co](https://huggingface.co) and create an account
+3. Click your profile → **New Space**
+4. Configure:
+   - **Space name**: `studyson`
+   - **SDK**: Select **Docker**
+   - **Hardware**: CPU basic (free)
+5. Under **Files** → Link to GitHub repo (or upload files)
+6. Add secret: `GROQ_API_KEY` in Space Settings → Variables
+7. The Space will auto-build and deploy!
+
+**Your app will be live at:** `https://huggingface.co/spaces/YOUR_USERNAME/studyson`
 
 ## Features in Detail
 
@@ -210,7 +212,7 @@ pip install --upgrade -r requirements.txt
 
 **Port already in use:**
 ```bash
-uvicorn app.main:app --port 8001
+uvicorn app.main:app --port 8000
 ```
 
 **File upload fails:**
