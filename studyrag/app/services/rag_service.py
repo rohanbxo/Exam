@@ -1,5 +1,5 @@
 from llama_index.core import VectorStoreIndex, Document, Settings
-from llama_index.llms.gemini import Gemini
+from llama_index.llms.groq import Groq
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.chat_engine import CondensePlusContextChatEngine
 from typing import Optional, AsyncGenerator, List
@@ -11,7 +11,7 @@ import os
 class RAGService:
 
     def __init__(self):
-        os.environ["GOOGLE_API_KEY"] = settings.google_api_key
+        os.environ["GROQ_API_KEY"] = settings.groq_api_key
         self._llm_initialized = False
         self.index: Optional[VectorStoreIndex] = None
         self.chat_engine = None
@@ -19,8 +19,8 @@ class RAGService:
 
     def _initialize_llm(self):
         if not self._llm_initialized:
-            Settings.llm = Gemini(model="models/gemini-2.5-flash")
-            # Use local HuggingFace embeddings to avoid API quota limits
+            Settings.llm = Groq(model="llama-3.1-8b-instant", api_key=settings.groq_api_key)
+            # Use local HuggingFace embeddings (free, no API needed)
             Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
             self._llm_initialized = True
 

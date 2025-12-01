@@ -179,9 +179,11 @@ async def reset_index():
     try:
         rag_service.reset_index()
 
-        for file_path in settings.upload_dir.glob("*"):
-            if file_path.is_file():
-                file_path.unlink()
+        # Only try to delete files if uploads directory exists
+        if settings.upload_dir.exists():
+            for file_path in settings.upload_dir.glob("*"):
+                if file_path.is_file():
+                    file_path.unlink()
 
         return StatusResponse(
             status="success",

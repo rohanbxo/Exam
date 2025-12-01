@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 class Settings(BaseSettings):
-    google_api_key: str
+    groq_api_key: str
     host: str = "0.0.0.0"
     port: int = 8000
     upload_dir: Path = Path("uploads")

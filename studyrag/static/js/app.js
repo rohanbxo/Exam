@@ -325,15 +325,8 @@ resetBtn.addEventListener('click', async () => {
 
         if (response.ok) {
             alert(data.message);
-            chatMessages.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">💬</div>
-                    <h3>Start a Conversation</h3>
-                    <p>Ask me anything about your indexed documents</p>
-                </div>
-            `;
-            clearAllResults();
-            await updateStatus();
+            // Force page reload to clear all state
+            window.location.reload();
         } else {
             alert(data.detail || 'Reset failed');
         }

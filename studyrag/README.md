@@ -52,7 +52,7 @@ A full-stack Retrieval-Augmented Generation (RAG) system for intelligent documen
 1. **Clone the repository**
 ```bash
 git clone <repository-url>
-cd docsense-rag
+cd studyrag
 ```
 
 2. **Create virtual environment**
@@ -208,7 +208,7 @@ GET /status
 ## Project Structure
 
 ```
-docsense-rag/
+studyrag/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py              # FastAPI application
