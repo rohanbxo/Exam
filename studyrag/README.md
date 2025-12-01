@@ -19,7 +19,7 @@ A full-stack Retrieval-Augmented Generation (RAG) system for intelligent documen
 - **FastAPI**: Modern Python web framework
 - **LlamaIndex**: RAG orchestration and document indexing
 - **Groq**: Lightning-fast LLM inference (Llama 3.1)
-- **HuggingFace**: Local embeddings (BGE-small)
+- **FastEmbed**: Lightweight embeddings (BGE-small)
 - **PyMuPDF**: Advanced PDF text extraction
 - **BeautifulSoup**: HTML parsing and web scraping
 - **Pydantic**: Data validation and settings management
@@ -33,7 +33,7 @@ A full-stack Retrieval-Augmented Generation (RAG) system for intelligent documen
 ### Ingestion Pipeline
 1. User uploads PDF or provides URL
 2. Content extraction (PyMuPDF for PDFs, BeautifulSoup for web)
-3. Text chunking and embedding via LlamaIndex + HuggingFace
+3. Text chunking and embedding via LlamaIndex + FastEmbed
 4. In-memory vector index creation
 
 ### Query Pipeline
@@ -174,7 +174,7 @@ Edit `app/config.py` to modify:
 
 ### RAG Pipeline
 - **Chunking**: Intelligent text splitting for optimal context windows
-- **Embeddings**: HuggingFace BGE-small for semantic understanding (runs locally)
+- **Embeddings**: FastEmbed BGE-small for semantic understanding (lightweight)
 - **Retrieval**: Top-k similarity search with configurable parameters
 - **Generation**: Groq Llama 3.1 for fast, accurate responses
 
@@ -224,7 +224,7 @@ MIT License - feel free to use this project for learning and development.
 
 - [LlamaIndex](https://www.llamaindex.ai/) for RAG orchestration
 - [Groq](https://groq.com/) for lightning-fast LLM inference
-- [HuggingFace](https://huggingface.co/) for embeddings
+- [FastEmbed](https://github.com/qdrant/fastembed) for lightweight embeddings
 - [FastAPI](https://fastapi.tiangolo.com/) for the web framework
 
 ---
