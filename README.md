@@ -19,9 +19,9 @@ A full-stack Retrieval-Augmented Generation (RAG) system for intelligent documen
 - **FastAPI**: Modern Python web framework
 - **LlamaIndex**: RAG orchestration and document indexing
 - **Groq**: Lightning-fast LLM inference (Llama 3.1)
-- **FastEmbed**: Lightweight embed](https://github.com/rohanbxo/Exam
+- **FastEmbed**: Lightweight embed]
 
-how do i included this in my Cv?
+
 
 Backend    FastAPI + LlamaIndex + Groq LLM + FastEmbed
 Frontend    HTML/CSS/JS with 4 views (Upload, Web Import, Chat, Summary)
