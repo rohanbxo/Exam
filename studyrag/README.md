@@ -1,234 +1,190 @@
-# Studyson - RAG Document QA & Summarization API
+---
+title: Studyson
+emoji: 📚
+colorFrom: purple
+colorTo: blue
+sdk: docker
+pinned: false
+---
 
-A full-stack Retrieval-Augmented Generation (RAG) system for intelligent document question-answering and summarization. Built with FastAPI, LlamaIndex, and Groq AI.
+# Studyson — RAG Document QA & Summarization
+
+A full-stack Retrieval-Augmented Generation (RAG) app for document Q&A, conversational chat, and summarization. Built with FastAPI, LlamaIndex, Groq, and a persistent Chroma vector store.
 
 ## Features
 
-- **📄 PDF Document Processing**: Upload and index PDF documents with intelligent text extraction
-- **🌐 Web Content Scraping**: Scrape and index content from URLs
-- **💬 Interactive Q&A Chat**: Ask questions about your documents with streaming responses
-- **📝 Smart Summarization**: Generate concise summaries of indexed documents
-- **🔍 Source Citations**: Get verifiable citations with exact source snippets
-- **⚡ Real-time Streaming**: Token-by-token streaming for responsive user experience
-- **🎨 Modern UI**: Clean, responsive web interface with tabbed navigation
-- **🐳 Docker Support**: Easy deployment with Docker and Docker Compose
+- **Multi-format ingestion** — PDF, DOCX, TXT, and Markdown files
+- **Web scraping** — Index any HTML page (with timeout, size cap, and content-type guard)
+- **Conversational chat** — Multi-turn Q&A via LlamaIndex `condense_plus_context` chat engine, with **per-session memory**
+- **Persistent vector store** — Chroma on disk; index survives restarts
+- **Smart summarization** — Length-controlled summaries across all indexed documents
+- **Source citations** — Verifiable snippets with similarity scores
+- **Real-time streaming** — Token-by-token Server-Sent Events
+- **Markdown rendering** — Chat answers render with code blocks, lists, and headings
+- **Docker-first** — Healthchecks, persistent volumes, and HF Spaces ready
 
 ## Tech Stack
 
 ### Backend
-- **FastAPI**: Modern Python web framework
-- **LlamaIndex**: RAG orchestration and document indexing
-- **Groq**: Lightning-fast LLM inference (Llama 3.1)
-- **FastEmbed**: Lightweight embeddings (BGE-small)
-- **PyMuPDF**: Advanced PDF text extraction
-- **BeautifulSoup**: HTML parsing and web scraping
-- **Pydantic**: Data validation and settings management
+- **FastAPI** `>=0.118` — Web framework with `lifespan` startup
+- **LlamaIndex** `>=0.14` — RAG orchestration, chat engine, retrieval
+- **Groq** — `llama-3.3-70b-versatile` LLM (configurable)
+- **FastEmbed** — `BAAI/bge-small-en-v1.5` embeddings (low memory)
+- **Chroma** `>=0.6` — Persistent vector store
+- **PyMuPDF / pypdf / python-docx** — Document extraction
+- **httpx** — Async HTTP with timeouts and streaming
+- **BeautifulSoup4** — HTML cleaning
+- **Pydantic v2** — Validated request/response models
 
 ### Frontend
-- **HTML5/CSS3/JavaScript**: Vanilla web technologies
-- **Server-Sent Events (SSE)**: Real-time streaming responses
+- Vanilla HTML / CSS / JS
+- `marked` + `DOMPurify` for safe markdown rendering
+- Server-Sent Events for streaming
+- LocalStorage-backed session IDs
 
 ## Architecture
 
-### Ingestion Pipeline
-1. User uploads PDF or provides URL
-2. Content extraction (PyMuPDF for PDFs, BeautifulSoup for web)
-3. Text chunking and embedding via LlamaIndex + FastEmbed
-4. In-memory vector index creation
+```
+┌────────┐   upload/scrape   ┌─────────────────┐   embed   ┌────────────────┐
+│ Client │ ───────────────►  │  DocumentProcessor│──────────►│ Chroma (disk)  │
+└────────┘                   └─────────────────┘           └────────────────┘
+     │                                                              │
+     │ POST /stream_query (SSE, session_id)                         │
+     ▼                                                              ▼
+┌──────────────┐  retrieve top-k  ┌──────────────────────────────────┐
+│  RAGService  │ ───────────────► │ LlamaIndex VectorStoreIndex      │
+│ (chat cache) │ ◄─────── Groq ── │ + condense_plus_context engine   │
+└──────────────┘                  └──────────────────────────────────┘
+```
 
-### Query Pipeline
-1. Question embedding generation
-2. Semantic similarity search for relevant chunks
-3. Context + question sent to Groq LLM
-4. Streaming response with source citations
+- Each browser stores a `session_id` in `localStorage`; server keeps a chat engine per session
+- Chroma persists embeddings to `chroma_store/`; restart-safe
+- `/reset` deletes the collection and clears all sessions
 
 ## Installation
 
 ### Prerequisites
-- Python 3.10 or higher
-- Groq API key ([Get it free here](https://console.groq.com))
+- Python 3.12+ (Docker uses 3.12-slim)
+- Groq API key — [free at console.groq.com](https://console.groq.com)
 
-### Local Setup
+### Local
 
-1. **Clone the repository**
 ```bash
 git clone <repository-url>
 cd studyrag
-```
 
-2. **Create virtual environment**
-```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+# Windows: venv\Scripts\activate
+source venv/bin/activate
 
-3. **Install dependencies**
-```bash
 pip install -r requirements.txt
-```
 
-4. **Set up environment variables**
-```bash
 cp .env.example .env
-```
+# edit .env and set GROQ_API_KEY
 
-Edit `.env` and add your Groq API key:
-```
-GROQ_API_KEY=your_groq_api_key_here
-PORT=7860
-HOST=0.0.0.0
-```
-
-5. **Run the application**
-```bash
 uvicorn app.main:app --reload --port 7860
 ```
 
-6. **Access the application**
+Open `http://localhost:7860`.
 
-Open your browser and navigate to: `http://localhost:7860`
+### Docker
 
-### Docker Setup
-
-1. **Set environment variables**
 ```bash
 cp .env.example .env
-# Edit .env with your Groq API key
+docker compose up --build
 ```
 
-2. **Build and run with Docker Compose**
-```bash
-docker-compose up --build
-```
+Volumes persist `uploads/`, `chroma_store/`, and the FastEmbed model cache.
 
-## API Endpoints
+## API
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/` | Serves the web UI |
-| POST | `/upload` | Upload PDF document |
-| POST | `/scrape` | Scrape URL content |
-| POST | `/stream_query` | Stream Q&A response |
-| POST | `/query` | Get Q&A response |
-| POST | `/summarize` | Generate summary |
-| POST | `/reset` | Clear all documents |
-| GET | `/status` | Get system status |
+| `GET`  | `/`                | Web UI |
+| `POST` | `/upload`          | Upload PDF/DOCX/TXT/MD |
+| `POST` | `/scrape_and_index`| Scrape and index a URL |
+| `POST` | `/stream_query`    | SSE streaming Q&A (per session, with chat memory) |
+| `POST` | `/query`           | One-shot Q&A with source citations |
+| `POST` | `/summarize`       | Summarize all indexed content |
+| `POST` | `/reset`           | Drop the Chroma collection and all sessions |
+| `GET`  | `/status`          | System status, indexed docs, active model |
+
+`POST /stream_query` and `/scrape_and_index` accept an optional `session_id`; if omitted, the server generates one and returns it as the first SSE event.
+
+## Configuration
+
+All settings can be set via env vars or `.env` (see `.env.example`):
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `GROQ_API_KEY` | *(required)* | Groq API key |
+| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq chat model |
+| `EMBED_MODEL` | `BAAI/bge-small-en-v1.5` | FastEmbed embedding model |
+| `HOST` / `PORT` | `0.0.0.0` / `7860` | Bind address |
+| `UPLOAD_DIR` | `uploads` | Where uploaded files are stored |
+| `CHROMA_DIR` | `chroma_store` | Persistent vector store path |
+| `MAX_FILE_SIZE` | `20971520` (20 MB) | Upload limit |
+| `MAX_SCRAPE_BYTES` | `5242880` (5 MB) | Scrape body cap |
+| `SCRAPE_TIMEOUT_SECONDS` | `15` | Scrape HTTP timeout |
+| `SIMILARITY_TOP_K` | `4` | Retrieval top-k |
 
 ## Project Structure
 
 ```
 studyrag/
 ├── app/
-│   ├── __init__.py
-│   ├── main.py              # FastAPI application
-│   ├── config.py            # Configuration settings
-│   ├── models/
-│   │   └── schemas.py       # Pydantic models
-│   ├── services/
-│   │   └── rag_service.py   # RAG logic
-│   └── utils/
-│       └── document_processor.py
-├── static/
-│   ├── css/style.css
-│   ├── js/app.js
-│   └── index.html
-├── .env.example
-├── .gitignore
-├── Dockerfile
-├── docker-compose.yml
-├── Procfile
+│   ├── main.py                    # FastAPI app, routes, lifespan
+│   ├── config.py                  # Pydantic settings
+│   ├── models/schemas.py          # Request/response models
+│   ├── services/rag_service.py    # Chroma-backed RAG, per-session chat
+│   └── utils/document_processor.py # Multi-format extraction + scraper
+├── static/                        # UI (HTML/CSS/JS)
+├── Dockerfile                     # Python 3.12-slim, healthcheck
+├── docker-compose.yml             # Volumes + healthcheck
 ├── requirements.txt
+├── .env.example
 └── README.md
 ```
 
-## Configuration
+## Deployment to Hugging Face Spaces
 
-### Environment Variables
+1. Push the repo to GitHub
+2. New Space → SDK: **Docker** → Hardware: CPU basic
+3. Link your repo (or upload files)
+4. Add `GROQ_API_KEY` under **Settings → Variables and secrets**
+5. Spaces auto-builds and serves on port 7860
 
-- `GROQ_API_KEY`: Your Groq API key (required, free tier available)
-- `HOST`: Server host (default: 0.0.0.0)
-- `PORT`: Server port (default: 7860)
-
-### Application Settings
-
-Edit `app/config.py` to modify:
-- `upload_dir`: Upload directory path
-- `max_file_size`: Maximum file size (default: 10MB)
-
-## Deployment
-
-### Deploy to Hugging Face Spaces (Recommended - Free)
-
-1. Push code to GitHub
-2. Go to [huggingface.co](https://huggingface.co) and create an account
-3. Click your profile → **New Space**
-4. Configure:
-   - **Space name**: `studyson`
-   - **SDK**: Select **Docker**
-   - **Hardware**: CPU basic (free)
-5. Under **Files** → Link to GitHub repo (or upload files)
-6. Add secret: `GROQ_API_KEY` in Space Settings → Variables
-7. The Space will auto-build and deploy!
-
-**Your app will be live at:** `https://huggingface.co/spaces/YOUR_USERNAME/studyson`
-
-## Features in Detail
-
-### RAG Pipeline
-- **Chunking**: Intelligent text splitting for optimal context windows
-- **Embeddings**: FastEmbed BGE-small for semantic understanding (lightweight)
-- **Retrieval**: Top-k similarity search with configurable parameters
-- **Generation**: Groq Llama 3.1 for fast, accurate responses
-
-### Streaming
-- Server-Sent Events (SSE) for real-time token delivery
-- Progressive rendering in the UI
-- Graceful error handling
-
-### Source Attribution
-- Exact text snippets from source documents
-- Similarity scores for transparency
-- Multiple source support per answer
+Note: HF Spaces filesystem persists across restarts within a Space, but is wiped on factory reset.
 
 ## Limitations
 
-- In-memory vector storage (resets on restart)
-- PDF-only document support (extensible to other formats)
-- Single-user session management
-- No authentication/authorization
+- Single-instance deployment (Chroma persistent client; no horizontal scaling out of the box)
+- No authentication — anyone with the URL can query and reset
+- Chat memory is in-process; restarting the server clears active chat histories (the index itself persists)
+- FastEmbed downloads its model on first run (~80 MB); cached afterward
 
 ## Troubleshooting
 
-### Common Issues
+**`pip install` fails on chromadb / fastembed**
+Make sure you have a C/C++ toolchain (`build-essential` on Linux, MSVC on Windows). The Docker build handles this automatically.
 
-**Import errors:**
-```bash
-pip install --upgrade -r requirements.txt
-```
+**Groq 401**
+Check `GROQ_API_KEY` in `.env`. Rotate at [console.groq.com](https://console.groq.com).
 
-**API key errors:**
-- Verify your `.env` file has the correct `GROQ_API_KEY`
-- Check API key validity at [console.groq.com](https://console.groq.com)
+**Slow first query**
+First call loads the embedding model and warms Chroma. Subsequent queries are fast.
 
-**Port already in use:**
-```bash
-uvicorn app.main:app --port 8000
-```
-
-**File upload fails:**
-- Check file size is under 10MB
+**Reset didn't clear**
+`/reset` drops the Chroma collection and clears `uploads/`. If you also want to remove the FastEmbed cache, delete the `fastembed_cache` Docker volume.
 
 ## License
 
-MIT License - feel free to use this project for learning and development.
+MIT.
 
 ## Acknowledgments
 
-- [LlamaIndex](https://www.llamaindex.ai/) for RAG orchestration
-- [Groq](https://groq.com/) for lightning-fast LLM inference
-- [FastEmbed](https://github.com/qdrant/fastembed) for lightweight embeddings
-- [FastAPI](https://fastapi.tiangolo.com/) for the web framework
-
----
-
-Built with ❤️ using RAG technology
+- [LlamaIndex](https://www.llamaindex.ai/)
+- [Groq](https://groq.com/)
+- [Chroma](https://www.trychroma.com/)
+- [FastEmbed](https://github.com/qdrant/fastembed)
+- [FastAPI](https://fastapi.tiangolo.com/)

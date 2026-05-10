@@ -1,13 +1,16 @@
-from pydantic import BaseModel, HttpUrl
 from typing import List, Optional
+
+from pydantic import BaseModel, Field, HttpUrl
 
 
 class ScrapeRequest(BaseModel):
     url: HttpUrl
+    session_id: Optional[str] = None
 
 
 class QueryRequest(BaseModel):
-    question: str
+    question: str = Field(..., min_length=1, max_length=2000)
+    session_id: Optional[str] = None
 
 
 class SourceInfo(BaseModel):
@@ -22,8 +25,8 @@ class FinalResponse(BaseModel):
 
 
 class SummarizeRequest(BaseModel):
-    max_length: Optional[int] = 500
-    style: Optional[str] = "concise"
+    max_length: int = Field(default=500, ge=50, le=2000)
+    style: str = "concise"
 
 
 class SummaryResponse(BaseModel):

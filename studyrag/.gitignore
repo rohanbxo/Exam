@@ -38,6 +38,10 @@ wheels/
 uploads/*
 !uploads/.gitkeep
 
+# Vector store / caches
+chroma_store/
+.cache/
+
 # OS
 .DS_Store
 Thumbs.db

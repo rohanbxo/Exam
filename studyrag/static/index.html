@@ -6,6 +6,8 @@
     <title>Studyson - Smart Document Assistant</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" defer></script>
 </head>
 <body>
     <div class="app-layout">
@@ -81,17 +83,17 @@
             <!-- Upload View -->
             <div class="view-container active" id="view-upload">
                 <div class="view-header">
-                    <h2 class="view-title">Upload PDF Documents</h2>
-                    <p class="view-description">Import your PDF files to create a searchable knowledge base</p>
+                    <h2 class="view-title">Upload Documents</h2>
+                    <p class="view-description">Import PDF, DOCX, TXT, or Markdown files to build a searchable knowledge base</p>
                 </div>
 
                 <div class="content-card">
                     <form id="upload-form" class="upload-area">
-                        <input type="file" id="file-input" accept=".pdf" hidden>
+                        <input type="file" id="file-input" accept=".pdf,.docx,.txt,.md" hidden>
                         <label for="file-input" class="drop-zone">
                             <div class="drop-zone-icon">📄</div>
-                            <h3 class="drop-zone-title" id="drop-zone-title">Drop your PDF here</h3>
-                            <p class="drop-zone-desc">or click to browse files</p>
+                            <h3 class="drop-zone-title" id="drop-zone-title">Drop your file here</h3>
+                            <p class="drop-zone-desc">PDF, DOCX, TXT, or Markdown — click to browse</p>
                             <div class="file-info" id="file-info" style="display: none;">
                                 <span class="file-icon">📎</span>
                                 <span class="file-name-display" id="file-name-display"></span>
@@ -186,6 +188,7 @@
         </main>
     </div>
 
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
     <script src="/static/js/app.js"></script>
 </body>
 </html>
