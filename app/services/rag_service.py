@@ -141,7 +141,7 @@ class RAGService:
         if not self.has_documents():
             raise ValueError("No documents indexed.")
         index = self._ensure_index()
-        query_engine = index.as_query_engine(similarity_top_k=8)
+        query_engine = index.as_query_engine(similarity_top_k=settings.summarize_top_k)
         prompt = (
             f"Provide a comprehensive summary of all indexed documents in approximately "
             f"{max_length} words. Cover the main ideas, key arguments, and important details. "

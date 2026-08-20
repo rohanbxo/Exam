@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -98,7 +99,7 @@ async def upload_document(file: UploadFile = File(...)):
         if not cleaned_text.strip():
             raise HTTPException(status_code=400, detail="No extractable text in file")
 
-        rag_service.add_document(cleaned_text, safe_name)
+        await asyncio.to_thread(rag_service.add_document, cleaned_text, safe_name)
 
         return StatusResponse(
             status="success",
@@ -126,7 +127,7 @@ async def scrape_and_index(request: ScrapeRequest):
         if not cleaned_text.strip():
             raise HTTPException(status_code=400, detail="No extractable text on page")
 
-        rag_service.add_document(cleaned_text, title)
+        await asyncio.to_thread(rag_service.add_document, cleaned_text, title)
 
         return StatusResponse(
             status="success",
@@ -169,6 +170,19 @@ async def delete_document(document_name: str):
 
 def _resolve_session(session_id: str | None) -> str:
     return session_id or str(uuid.uuid4())
+
+
+def _rate_limit_detail(exc: Exception) -> str | None:
+    """Return a readable message if this is a provider rate-limit error."""
+    text = str(exc)
+    if "rate_limit_exceeded" not in text and "429" not in text:
+        return None
+    wait = re.search(r"try again in ([\d.]+)s", text)
+    when = f" Try again in about {float(wait.group(1)):.0f}s." if wait else ""
+    return (
+        "Groq rate limit reached (free tier allows 8,000 tokens/minute)."
+        f"{when} Shorten the request, index fewer documents, or upgrade your Groq plan."
+    )
 
 
 @app.post("/stream_query")
@@ -215,7 +229,8 @@ async def stream_query(request: QueryRequest):
                 logger.exception("Failed to persist assistant message for session %s", session_id)
         except Exception as e:
             logger.exception("Stream query failed")
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            message = _rate_limit_detail(e) or str(e)
+            yield f"data: {json.dumps({'error': message})}\n\n"
 
     return StreamingResponse(
         event_generator(),
@@ -253,6 +268,9 @@ async def summarize(request: SummarizeRequest):
         )
     except Exception as e:
         logger.exception("Summarize failed")
+        detail = _rate_limit_detail(e)
+        if detail:
+            raise HTTPException(status_code=429, detail=detail)
         raise HTTPException(status_code=500, detail=f"Error generating summary: {e}")
 
 

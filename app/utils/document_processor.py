@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from pathlib import Path
 
@@ -24,11 +25,13 @@ class DocumentProcessor:
     async def extract_text(file_path: Path) -> str:
         suffix = file_path.suffix.lower()
         if suffix == ".pdf":
-            return DocumentProcessor._extract_pdf(file_path)
+            return await asyncio.to_thread(DocumentProcessor._extract_pdf, file_path)
         if suffix == ".docx":
-            return DocumentProcessor._extract_docx(file_path)
+            return await asyncio.to_thread(DocumentProcessor._extract_docx, file_path)
         if suffix in {".txt", ".md"}:
-            return file_path.read_text(encoding="utf-8", errors="replace")
+            return await asyncio.to_thread(
+                file_path.read_text, encoding="utf-8", errors="replace"
+            )
         raise ValueError(f"Unsupported file type: {suffix}")
 
     @staticmethod

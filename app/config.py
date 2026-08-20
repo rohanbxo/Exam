@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     scrape_timeout_seconds: float = 15.0
 
     similarity_top_k: int = 4
+    # Kept low so a summarize request fits inside Groq's free-tier
+    # token-per-minute budget; raise it on a paid tier.
+    summarize_top_k: int = 4
 
     model_config = SettingsConfigDict(
         env_file=".env",
