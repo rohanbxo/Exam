@@ -39,3 +39,34 @@ class StatusResponse(BaseModel):
     status: str
     message: str
     details: Optional[dict] = None
+
+
+class DeleteDocumentResponse(BaseModel):
+    status: str
+    message: str
+    deleted: str
+    indexed_documents: List[str]
+
+
+class ChatMessage(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
+    sources: Optional[List[SourceInfo]] = None
+    created_at: str
+
+
+class SessionSummary(BaseModel):
+    session_id: str
+    title: Optional[str] = None
+    created_at: str
+    updated_at: str
+    message_count: int
+
+
+class SessionMessagesResponse(BaseModel):
+    session_id: str
+    messages: List[ChatMessage]
+
+
+class RenameSessionRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)

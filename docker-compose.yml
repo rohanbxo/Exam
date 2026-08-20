@@ -5,13 +5,13 @@ services:
       - "7860:7860"
     environment:
       - GROQ_API_KEY=${GROQ_API_KEY}
-      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
+      - GROQ_MODEL=${GROQ_MODEL:-openai/gpt-oss-120b}
       - HOST=0.0.0.0
       - PORT=7860
     volumes:
       - ./uploads:/app/uploads
       - ./chroma_store:/app/chroma_store
-      - fastembed_cache:/app/.cache/fastembed
+      - hf_cache:/app/.cache/huggingface
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860/status', timeout=3)"]
@@ -21,4 +21,4 @@ services:
       start_period: 30s
 
 volumes:
-  fastembed_cache:
+  hf_cache:

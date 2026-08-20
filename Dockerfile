@@ -1,3 +1,15 @@
+# ---- frontend build stage ----
+FROM node:22-slim AS frontend-build
+
+WORKDIR /frontend
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend/ .
+RUN npm run build
+
+# ---- python runtime stage ----
 FROM python:3.12-slim
 
 RUN useradd -m -u 1000 user
@@ -14,8 +26,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=user:user . .
+COPY --from=frontend-build --chown=user:user /frontend/dist ./static
 
-RUN mkdir -p uploads chroma_store static/css static/js && \
+RUN mkdir -p uploads chroma_store .cache/huggingface && \
     chown -R user:user /app
 
 USER user
@@ -24,8 +37,7 @@ ENV HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    HF_HOME=/app/.cache/huggingface \
-    FASTEMBED_CACHE_PATH=/app/.cache/fastembed
+    HF_HOME=/app/.cache/huggingface
 
 EXPOSE 7860
 

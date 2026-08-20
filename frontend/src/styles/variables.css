@@ -1,0 +1,46 @@
+/* Design tokens ported from the vanilla Studyson app (static/css/style.css),
+   extended with a dark palette activated via [data-theme="dark"]. */
+
+:root {
+  --primary: #667eea;
+  --primary-dark: #5568d3;
+  --secondary: #764ba2;
+  --accent: #f093fb;
+  --bg-main: #f7f9fc;
+  --bg-card: #ffffff;
+  --bg-sidebar: #1a1f36;
+  --text-primary: #2d3748;
+  --text-secondary: #718096;
+  --text-light: #a0aec0;
+  --border: #e2e8f0;
+  --success: #48bb78;
+  --danger: #f56565;
+  --warning: #ed8936;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
+
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+:root[data-theme='dark'] {
+  --primary: #7c8ff0;
+  --primary-dark: #667eea;
+  --secondary: #8a5cb5;
+  --accent: #f2a6fc;
+  --bg-main: #12131c;
+  --bg-card: #1b1d2b;
+  --bg-sidebar: #0e0f18;
+  --text-primary: #e6e8f0;
+  --text-secondary: #a0a8c0;
+  --text-light: #6b7290;
+  --border: #2b2e42;
+  --success: #48bb78;
+  --danger: #f56565;
+  --warning: #ed8936;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
+
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}

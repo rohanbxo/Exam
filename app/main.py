@@ -1,7 +1,9 @@
+import asyncio
 import json
 import logging
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -11,13 +13,19 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.models.schemas import (
+    ChatMessage,
+    DeleteDocumentResponse,
     FinalResponse,
     QueryRequest,
+    RenameSessionRequest,
     ScrapeRequest,
+    SessionMessagesResponse,
+    SessionSummary,
     StatusResponse,
     SummarizeRequest,
     SummaryResponse,
 )
+from app.services.history_service import HistoryService
 from app.services.rag_service import RAGService
 from app.utils.document_processor import ALLOWED_EXTENSIONS, DocumentProcessor
 
@@ -30,6 +38,12 @@ async def lifespan(_: FastAPI):
     settings.upload_dir.mkdir(parents=True, exist_ok=True)
     settings.chroma_dir.mkdir(parents=True, exist_ok=True)
     logger.info("Studyson starting | model=%s | chroma=%s", settings.groq_model, settings.chroma_dir)
+
+    # Warm the embedding model at startup so the first user request doesn't
+    # pay the model-load cost (several seconds on a cold container).
+    await asyncio.to_thread(rag_service.warm_up)
+    logger.info("Embedding model warm | embed_model=%s", settings.embed_model)
+
     yield
 
 
@@ -50,13 +64,9 @@ app.add_middleware(
 
 rag_service = RAGService()
 doc_processor = DocumentProcessor()
+history_service = HistoryService(settings.chroma_dir / settings.history_db_name)
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-
-@app.get("/")
-async def read_root():
-    return FileResponse("static/index.html")
+app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
 
 
 @app.post("/upload", response_model=StatusResponse)
@@ -137,6 +147,26 @@ async def scrape_and_index(request: ScrapeRequest):
         raise HTTPException(status_code=500, detail=f"Error scraping URL: {e}")
 
 
+@app.delete("/documents/{document_name}", response_model=DeleteDocumentResponse)
+async def delete_document(document_name: str):
+    try:
+        rag_service.delete_document(document_name)
+        file_path = settings.upload_dir / document_name
+        if file_path.exists() and file_path.is_file():
+            file_path.unlink(missing_ok=True)
+        return DeleteDocumentResponse(
+            status="success",
+            message=f"Document '{document_name}' removed",
+            deleted=document_name,
+            indexed_documents=rag_service.get_indexed_documents(),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.exception("Delete failed for %s", document_name)
+        raise HTTPException(status_code=500, detail=f"Error deleting document: {e}")
+
+
 def _resolve_session(session_id: str | None) -> str:
     return session_id or str(uuid.uuid4())
 
@@ -152,13 +182,18 @@ async def stream_query(request: QueryRequest):
         try:
             yield f"data: {json.dumps({'session_id': session_id})}\n\n"
 
+            try:
+                await asyncio.to_thread(history_service.add_message, session_id, "user", request.question)
+            except Exception:
+                logger.exception("Failed to persist user message for session %s", session_id)
+
             answer_parts: list[str] = []
             async for token in rag_service.stream_query(request.question, session_id):
                 answer_parts.append(token)
                 yield f"data: {json.dumps({'token': token})}\n\n"
 
             full_answer = "".join(answer_parts)
-            _, sources = await rag_service.query(request.question)
+            sources = await rag_service.retrieve_sources(request.question)
 
             final = FinalResponse(
                 final_answer=full_answer,
@@ -166,6 +201,18 @@ async def stream_query(request: QueryRequest):
             )
             yield "data: [DONE]\n\n"
             yield f"data: {json.dumps(final.model_dump())}\n\n"
+
+            try:
+                await asyncio.to_thread(
+                    history_service.add_message,
+                    session_id,
+                    "assistant",
+                    full_answer,
+                    [s.model_dump() for s in sources],
+                )
+                await asyncio.to_thread(history_service.touch_session, session_id)
+            except Exception:
+                logger.exception("Failed to persist assistant message for session %s", session_id)
         except Exception as e:
             logger.exception("Stream query failed")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
@@ -236,6 +283,41 @@ async def get_status():
             "document_count": len(docs),
         },
     )
+
+
+@app.get("/sessions", response_model=list[SessionSummary])
+async def list_sessions():
+    return await asyncio.to_thread(history_service.list_sessions)
+
+
+@app.get("/sessions/{session_id}/messages", response_model=SessionMessagesResponse)
+async def get_session_messages(session_id: str):
+    messages = await asyncio.to_thread(history_service.get_messages, session_id)
+    return SessionMessagesResponse(
+        session_id=session_id,
+        messages=[ChatMessage(**m) for m in messages],
+    )
+
+
+@app.patch("/sessions/{session_id}", response_model=StatusResponse)
+async def rename_session(session_id: str, request: RenameSessionRequest):
+    await asyncio.to_thread(history_service.rename_session, session_id, request.title)
+    return StatusResponse(status="success", message="Session renamed")
+
+
+@app.delete("/sessions/{session_id}", response_model=StatusResponse)
+async def delete_session(session_id: str):
+    await asyncio.to_thread(history_service.delete_session, session_id)
+    rag_service.reset_session(session_id)
+    return StatusResponse(status="success", message="Session deleted")
+
+
+@app.get("/{full_path:path}")
+async def spa_fallback(full_path: str):
+    candidate = Path("static") / full_path
+    if full_path and candidate.is_file():
+        return FileResponse(candidate)
+    return FileResponse("static/index.html")
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ from threading import Lock
 import chromadb
 from llama_index.core import Document, Settings, StorageContext, VectorStoreIndex
 from llama_index.core.chat_engine.types import BaseChatEngine
-from llama_index.embeddings.fastembed import FastEmbedEmbedding
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.groq import Groq
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
@@ -24,7 +24,7 @@ def _ensure_llm() -> None:
             return
         os.environ["GROQ_API_KEY"] = settings.groq_api_key
         Settings.llm = Groq(model=settings.groq_model, api_key=settings.groq_api_key)
-        Settings.embed_model = FastEmbedEmbedding(model_name=settings.embed_model)
+        Settings.embed_model = HuggingFaceEmbedding(model_name=settings.embed_model)
         _llm_initialized = True
 
 
@@ -66,6 +66,18 @@ class RAGService:
             self._indexed_documents.append(source_name)
         self._chat_engines.clear()
 
+    def warm_up(self) -> None:
+        """Initialize the LLM/embedding models ahead of the first request."""
+        _ensure_llm()
+
+    def delete_document(self, source_name: str) -> None:
+        if source_name not in self._indexed_documents:
+            raise ValueError(f"Document '{source_name}' is not indexed.")
+        self._collection.delete(where={"source": source_name})
+        self._indexed_documents = [d for d in self._indexed_documents if d != source_name]
+        self._chat_engines.clear()
+        self._index = None
+
     def _get_chat_engine(self, session_id: str) -> BaseChatEngine:
         engine = self._chat_engines.get(session_id)
         if engine is None:
@@ -87,6 +99,26 @@ class RAGService:
         response = await engine.astream_chat(question)
         async for token in response.async_response_gen():
             yield token
+
+    async def retrieve_sources(self, question: str) -> List[SourceInfo]:
+        """Fetch citation sources without running a second LLM generation.
+
+        Used by /stream_query, where the answer text already came from the
+        streaming chat engine and only the source nodes are still needed.
+        """
+        if not self.has_documents():
+            raise ValueError("No documents indexed.")
+        index = self._ensure_index()
+        retriever = index.as_retriever(similarity_top_k=settings.similarity_top_k)
+        nodes = await retriever.aretrieve(question)
+        return [
+            SourceInfo(
+                file_name=node.metadata.get("source", "Unknown"),
+                text=node.text[:300],
+                score=getattr(node, "score", None),
+            )
+            for node in nodes
+        ]
 
     async def query(self, question: str) -> tuple[str, List[SourceInfo]]:
         if not self.has_documents():

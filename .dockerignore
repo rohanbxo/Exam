@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Frontend (built inside the image by the frontend-build stage)
+frontend/node_modules/
+frontend/dist/
+
+# Local data / env
+.env
+uploads/*
+chroma_store/
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/

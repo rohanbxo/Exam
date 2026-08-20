@@ -4,7 +4,7 @@ from pathlib import Path
 
 class Settings(BaseSettings):
     groq_api_key: str
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "openai/gpt-oss-120b"
     embed_model: str = "BAAI/bge-small-en-v1.5"
 
     host: str = "0.0.0.0"
@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     upload_dir: Path = Path("uploads")
     chroma_dir: Path = Path("chroma_store")
+    history_db_name: str = "history.db"
 
     max_file_size: int = 20 * 1024 * 1024
     max_scrape_bytes: int = 5 * 1024 * 1024
